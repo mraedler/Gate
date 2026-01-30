@@ -370,7 +370,14 @@ private:
     G4ThreeVector m_positronGenerationPos;
     G4ThreeVector m_positronAnnihilPos;
 
-    G4double dxg1, dyg1, dzg1, dxg2, dyg2, dzg2;
+    G4double dxg1, dyg1, dzg1, dxg2, dyg2, dzg2, dxg3, dyg3, dzg3;
+
+   // new third photon
+    double photon3_source_x;
+    double photon3_source_y;
+    double photon3_source_z;
+    double photon3_energy;
+   // new third photon
 
     G4int saveRndm;
 
@@ -439,7 +446,7 @@ private:
     G4ThreeVector m_ionDecayPos_copy;
     G4ThreeVector m_positronGenerationPos_copy;
     G4ThreeVector m_positronAnnihilPos_copy;
-    G4double dxg1_copy, dyg1_copy, dzg1_copy, dxg2_copy, dyg2_copy, dzg2_copy;
+    G4double dxg1_copy, dyg1_copy, dzg1_copy, dxg2_copy, dyg2_copy, dzg2_copy, dxg3_copy, dyg3_copy, dzg3_copy;
     G4int m_RSEventID, m_RSRunID;
 
     /// ROOT FILE & DATAS FOR TRACKS INFOS
@@ -474,6 +481,7 @@ private:
     G4String m_particleName;
     Char_t m_volumeName[40], m_processName[40], m_parentparticleName[40];
     /* PY Descourt 08/09/2009 */
+
 };
 //--------------------------------------------------------------------------
 

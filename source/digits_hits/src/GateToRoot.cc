@@ -113,6 +113,16 @@ GateToRoot::GateToRoot(const G4String &name, GateOutputMgr *outputMgr, DigiMode 
         // the VOutputModule pure virtual method GiveNameOfFile()
 	, m_rootMessenger(0)
 {
+// new third photon 
+photon3_source_x = 0.0;
+photon3_source_y = 0.0;
+photon3_source_z = 0.0;
+photon3_energy   = 0.0;
+
+dxg3 = 0.0;
+dyg3 = 0.0;
+dzg3 = 0.0;
+// new third phoiton
 
 	//G4cout<<"GateToRoot::GateToRoot "<<G4endl;
     /*
@@ -525,6 +535,9 @@ void GateToRoot::RecordBeginOfAcquisition() {
         m_RecStepTree->Branch(G4String("dxg2").c_str(), &dxg2, "dxg2/D");
         m_RecStepTree->Branch(G4String("dyg2").c_str(), &dyg2, "dyg2/D");
         m_RecStepTree->Branch(G4String("dzg2").c_str(), &dzg2, "dzg2/D");
+		m_RecStepTree->Branch(G4String("dxg3").c_str(), &dxg3, "dxg3/D");
+        m_RecStepTree->Branch(G4String("dyg3").c_str(), &dyg3, "dyg3/D");
+        m_RecStepTree->Branch(G4String("dzg3").c_str(), &dzg3, "dzg3/D");
         m_RecStepTree->Branch(G4String("photon1PhR").c_str(), &theCRData.photon1_phantom_Rayleigh, "photon1PhR/I");
         m_RecStepTree->Branch(G4String("photon2PhR").c_str(), &theCRData.photon2_phantom_Rayleigh, "photon2PhR/I");
         m_RecStepTree->Branch(G4String("photon3PhR").c_str(), &theCRData.photon3_phantom_Rayleigh, "photon3PhR/I");
@@ -740,6 +753,9 @@ void GateToRoot::RecordBeginOfEvent(const G4Event *evt) {
     dxg2 = 0.;
     dyg2 = 0.;
     dzg2 = 0.;
+	dxg3 = 0.;
+    dyg3 = 0.;
+    dzg3 = 0.;
 
     theCRData.photon1_phantom_Rayleigh = 0;
     theCRData.photon2_phantom_Rayleigh = 0;
@@ -775,6 +791,9 @@ void GateToRoot::RecordBeginOfEvent(const G4Event *evt) {
             dxg2 = dxg2_copy;
             dyg2 = dyg2_copy;
             dzg2 = dzg2_copy;
+			dxg3 = dxg3_copy;
+            dyg3 = dyg3_copy;
+            dzg3 = dzg3_copy;
             fSkipRecStepData = 0;
             //G4cout << "GateToRoot::RecordBeginOfEvent \n";
             //PrintRecStep();
@@ -878,28 +897,89 @@ void GateToRoot::RecordEndOfEvent(const G4Event *event) {
 						G4cout
 								<< "GateToRoot:  ROOT: Cannot find histo" << hist_name << Gateendl;
 				}
+				//new edited 
+auto photonIDs = m_trajectoryNavigator->FindAnnihilationGammasTrackID();
+G4int photon3ID = (photonIDs.size() >= 3) ? photonIDs[2] : 0;
+
+				// new 3 rd photon
+				if (photon3ID > 0) {
+					// Source position
+					auto pos3 = m_trajectoryNavigator->GetPhotonInitialPosition(photon3ID);
+					photon3_source_x = pos3.x();
+					photon3_source_y = pos3.y();
+					photon3_source_z = pos3.z();
+					// Energy
+					photon3_energy = m_trajectoryNavigator->GetPhotonInitialEnergy(photon3ID);
+					// Direction
+					auto dir3 = m_trajectoryNavigator->GetPhotonInitialDirection(photon3ID);
+					dxg3 = dir3.x();
+					dyg3 = dir3.y();
+					dzg3 = dir3.z();
+				}
+                // new third 
 
 				// Histo of acolinearity angle distribution
 
-				G4double dev = (dxg1 * dxg2 + dyg1 * dyg2 + dzg1 * dzg2) /
+				G4double dev12 = (dxg1 * dxg2 + dyg1 * dyg2 + dzg1 * dzg2) /
 							   ((sqrt(dxg1 * dxg1 + dyg1 * dyg1 + dzg1 * dzg1)) *
 								(sqrt(dxg2 * dxg2 + dyg2 * dyg2 + dzg2 * dzg2)));
-				if (dzg1 > dzg2) { dev = rad2deg(acos(-dev)); }
-				else { dev = rad2deg(acos(dev)) - 180; }
 
-				if (std::isnan(dev)) dev = 0.;
+				G4double dev13 = (dxg1 * dxg3 + dyg1 * dyg3 + dzg1 * dzg3) /
+							   ((sqrt(dxg1 * dxg1 + dyg1 * dyg1 + dzg1 * dzg1)) *
+								(sqrt(dxg3 * dxg3 + dyg3 * dyg3 + dzg3 * dzg3)));
+								
+				G4double dev23 = (dxg2 * dxg3 + dyg2 * dyg3 + dzg2 * dzg3) /
+							   ((sqrt(dxg2 * dxg2 + dyg2 * dyg2 + dzg2 * dzg2)) *
+								(sqrt(dxg3 * dxg3 + dyg3 * dyg3 + dzg3 * dzg3)));
+				
+				if (dzg1 > dzg2) { dev12 = rad2deg(acos(-dev12)); }
+				else { dev12 = rad2deg(acos(dev12)) - 180; }
+
+				if (std::isnan(dev12)) dev12 = 0.;
 
 				// G4cout<< " dev = " << dev << Gateendl;
 
 				hist_name = "Acolinea_Angle_Distribution_deg";
 				hist = NULL;
 				if ((hist = (TH1F *) m_working_root_directory->GetList()->FindObject(hist_name)) != NULL) {
-					hist->Fill(dev);
+					hist->Fill(dev12);
 				} else {
 					//if (nVerboseLevel > 0)
 					G4cout << "GateToRoot:  ROOT: Cannot find histo " << hist_name << Gateendl;
 				}
 
+				if (dzg1 > dzg3) { dev13 = rad2deg(acos(-dev13)); }
+				else { dev13 = rad2deg(acos(dev13)) - 180; }
+
+				if (std::isnan(dev13)) dev13 = 0.;
+
+				// G4cout<< " dev13 = " << dev13 << Gateendl;
+
+				hist_name = "Acolinea_Angle_Distribution_deg";
+				hist = NULL;
+				if ((hist = (TH1F *) m_working_root_directory->GetList()->FindObject(hist_name)) != NULL) {
+					hist->Fill(dev13);
+				} else {
+					//if (nVerboseLevel > 0)
+					G4cout << "GateToRoot:  ROOT: Cannot find histo " << hist_name << Gateendl;
+				}
+
+				if (dzg2 > dzg3) { dev23 = rad2deg(acos(-dev23)); }
+				else { dev23 = rad2deg(acos(dev23)) - 180; }
+
+				if (std::isnan(dev23)) dev23 = 0.;
+
+				// G4cout<< " dev23 = " << dev23 << Gateendl;
+
+				hist_name = "Acolinea_Angle_Distribution_deg";
+				hist = NULL;
+				if ((hist = (TH1F *) m_working_root_directory->GetList()->FindObject(hist_name)) != NULL) {
+					hist->Fill(dev23);
+				} else {
+					//if (nVerboseLevel > 0)
+					G4cout << "GateToRoot:  ROOT: Cannot find histo " << hist_name << Gateendl;
+				}
+				
 				TNtuple *ntuple;
 				G4String ntuple_name = "Gate";
 				if ((ntuple = (TNtuple *) m_working_root_directory->GetList()->FindObject(ntuple_name)) == NULL) {
@@ -1150,6 +1230,12 @@ void GateToRoot::RecordStepWithVolume(const GateVVolume *, const G4Step *aStep) 
             } else {
                 procName = "";
             }
+			if (aStep->GetTrack()->GetTrackID() == 1 && procName == "annihil") {
+                dxg3 = momentumDirection.x();
+                dyg3 = momentumDirection.y();
+                dzg3 = momentumDirection.z();
+            }
+
             if (aStep->GetTrack()->GetTrackID() == 2 && procName == "annihil") {
 
                 dxg1 = momentumDirection.x();
@@ -1377,7 +1463,10 @@ void GateToRoot::CloseTracksRootFile() {
         dxg2_copy = dxg2;
         dyg2_copy = dyg2;
         dzg2_copy = dzg2;
-
+		dxg3_copy = dxg3;
+        dyg3_copy = dyg3;
+        dzg3_copy = dzg3;
+		
         m_positronKinEnergy_copy = m_positronKinEnergy;
         m_ionDecayPos_copy = m_ionDecayPos;
         m_positronGenerationPos_copy = m_positronGenerationPos;
@@ -1408,6 +1497,9 @@ void GateToRoot::PrintRecStep() {
     G4cout << "dxg2 = " << dxg2 << Gateendl;
     G4cout << "dyg2 = " << dyg2 << Gateendl;
     G4cout << "dzg2 = " << dzg2 << Gateendl;
+	G4cout << "dxg3 = " << dxg3 << Gateendl;
+    G4cout << "dyg3 = " << dyg3 << Gateendl;
+    G4cout << "dzg3 = " << dzg3 << Gateendl;
     G4cout << "photon1_phantom_Rayleigh = " << theCRData.photon2_phantom_Rayleigh << Gateendl;
     G4cout << "photon2_phantom_Rayleigh = " << theCRData.photon2_phantom_Rayleigh << Gateendl;
     G4cout << "photon3_phantom_Rayleigh = " << theCRData.photon3_phantom_Rayleigh << Gateendl;
@@ -1431,6 +1523,9 @@ void GateToRoot::PrintRecStep() {
     G4cout << "dxg2 = " << dxg2_copy << Gateendl;
     G4cout << "dyg2 = " << dyg2_copy << Gateendl;
     G4cout << "dzg2 = " << dzg2_copy << Gateendl;
+	G4cout << "dxg3 = " << dxg3_copy << Gateendl;
+    G4cout << "dyg3 = " << dyg3_copy << Gateendl;
+    G4cout << "dzg3 = " << dzg3_copy << Gateendl;
     G4cout << "photon1_phantom_Rayleigh = " << theCRData_copy.photon2_phantom_Rayleigh << Gateendl;
     G4cout << "photon2_phantom_Rayleigh = " << theCRData_copy.photon2_phantom_Rayleigh << Gateendl;
     G4cout << "photon3_phantom_Rayleigh = " << theCRData_copy.photon3_phantom_Rayleigh << Gateendl;
@@ -1579,6 +1674,9 @@ void GateToRoot::OpenTracksFile() {
     m_RecStepTree->SetBranchAddress(G4String("dxg2").c_str(), &dxg2);
     m_RecStepTree->SetBranchAddress(G4String("dyg2").c_str(), &dyg2);
     m_RecStepTree->SetBranchAddress(G4String("dzg2").c_str(), &dzg2);
+	m_RecStepTree->SetBranchAddress(G4String("dxg3").c_str(), &dxg3);
+	m_RecStepTree->SetBranchAddress(G4String("dyg3").c_str(), &dyg3);
+	m_RecStepTree->SetBranchAddress(G4String("dyg3").c_str(), &dyg3);
     m_RecStepTree->SetBranchAddress(G4String("photon1PhR").c_str(), &theCRData.photon1_phantom_Rayleigh);
     m_RecStepTree->SetBranchAddress(G4String("photon2PhR").c_str(), &theCRData.photon2_phantom_Rayleigh);
     m_RecStepTree->SetBranchAddress(G4String("photon3PhR").c_str(), &theCRData.photon3_phantom_Rayleigh);

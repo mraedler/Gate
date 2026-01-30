@@ -189,7 +189,7 @@ void GateTrajectoryNavigator::FillPhotonIDsForThreePhotons(std::vector<G4int>& p
                       "gammas vertices : dist (mm) "
                    << dist12 / mm << Gateendl;
 
-          if (dist12 / mm < 1E-7) {
+            if (dist12 / mm < 1E-7) {
             if (nVerboseLevel > 1) {
               G4cout << "[GateTrajectoryNavigator::FindAnnihilationGammasTrackID] : Found common "
                         "vertex for the two annihilation gammas :"
@@ -198,7 +198,7 @@ void GateTrajectoryNavigator::FillPhotonIDsForThreePhotons(std::vector<G4int>& p
             }
 
             // check if third one also from same vertex
-            if ((vert2 - vert3).mag() / mm < 1E-7) {
+             if ((vert2 - vert3).mag() / mm < 1E-7) {
               // we add all three photons to the vertex
               m_photonIDVec.push_back(trj1->GetTrackID());
               m_photonIDVec.push_back(trj2->GetTrackID());
@@ -260,7 +260,7 @@ void GateTrajectoryNavigator::FillPhotonIDsForTwoPhotons(std::vector<G4int>& pho
                     "gammas vertices : dist (mm) "
                  << dist / mm << Gateendl;
 
-        if (dist / mm < 1E-7) {
+          if (dist / mm < 1E-7) {
           if (nVerboseLevel > 1) {
             G4cout << "[GateTrajectoryNavigator::FindAnnihilationGammasTrackID] : Found common "
                       "vertex for the two annihilation gammas :"
@@ -425,4 +425,38 @@ void GateTrajectoryNavigator::Initialize()
   m_photonIDVec.clear();
   m_positronTrackID = -1;
 }
+  // capturing the third photon
+G4ThreeVector GateTrajectoryNavigator::GetPhotonInitialPosition(G4int photonTrackID)
+{
+	for (size_t i = 0; i < m_trajectoryContainer->entries(); i++) {
+    	G4Trajectory* trj = (G4Trajectory*)((*m_trajectoryContainer)[i]);
+    	if (trj->GetTrackID() == photonTrackID) {
+        	return trj->GetPoint(0)->GetPosition();
+    	}
+	}
+	return G4ThreeVector(0,0,0);
+}
+
+G4ThreeVector GateTrajectoryNavigator::GetPhotonInitialDirection(G4int photonTrackID)
+{
+	for (size_t i = 0; i < m_trajectoryContainer->entries(); i++) {
+    	G4Trajectory* trj = (G4Trajectory*)((*m_trajectoryContainer)[i]);
+    	if (trj->GetTrackID() == photonTrackID) {
+        	return trj->GetInitialMomentum().unit();
+    	}
+	}
+	return G4ThreeVector(0,0,0);
+}
+
+G4double GateTrajectoryNavigator::GetPhotonInitialEnergy(G4int photonTrackID)
+{
+	for (size_t i = 0; i < m_trajectoryContainer->entries(); i++) {
+    	G4Trajectory* trj = (G4Trajectory*)((*m_trajectoryContainer)[i]);
+    	if (trj->GetTrackID() == photonTrackID) {
+        	return trj->GetInitialKineticEnergy();
+    	}
+	}
+	return 0.0;
+}
+  // Capturing the third photon
 
