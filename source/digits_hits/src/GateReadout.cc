@@ -75,8 +75,6 @@ GateReadout::GateReadout(GateSinglesDigitizer *digitizer, G4String name)
 	G4String colName = digitizer->GetOutputName();
 	collectionName.push_back(colName);
 	m_messenger = new GateReadoutMessenger(this);
-
-	m_useEnergyWeightedGlobalPos = false;
 }
 
 
