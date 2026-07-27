@@ -75,6 +75,8 @@ GateReadout::GateReadout(GateSinglesDigitizer *digitizer, G4String name)
 	G4String colName = digitizer->GetOutputName();
 	collectionName.push_back(colName);
 	m_messenger = new GateReadoutMessenger(this);
+
+	m_useEnergyWeightedGlobalPos = false;
 }
 
 
@@ -253,6 +255,11 @@ void GateReadout::Digitize()
   G4int* final_nb_digi = NULL;
   GateDigi** final_digi = NULL;
 
+  // M. Rädler: Also calculate the continuous energy-weighted centroid for analysis purposes
+  G4double* final_global_posX = NULL;
+  G4double* final_global_posY = NULL;
+  G4double* final_global_posZ = NULL;
+
   G4int final_nb_out_digi = 0;
 
 
@@ -279,6 +286,12 @@ void GateReadout::Digitize()
 	  final_crystal_posZ = (G4double*)calloc(n_digi,sizeof(G4double));
 	  final_nb_digi    = (G4int*)calloc(n_digi,sizeof(G4int));
   }
+
+  // M. Rädler: For the continuous energy-weighted centroid
+  final_global_posX = (G4double*)calloc(n_digi,sizeof(G4double));
+  final_global_posY = (G4double*)calloc(n_digi,sizeof(G4double));
+  final_global_posZ = (G4double*)calloc(n_digi,sizeof(G4double));
+
   // S. Stute: we need energy to sum up correctly for all output digi and affect only at the end.
   //           In previous versions, even for take Winner, the energy was affected online so the
   //           final digi was not the winner in all cases.
@@ -317,14 +330,16 @@ void GateReadout::Digitize()
 		  // Case: we found an output digi with same blockID
 		  if ( this_output_digi!=final_nb_out_digi )
 		  {
+		  	  G4double energy = inputDigi->GetEnergy();
+
 			  // --------------------------------------------------------------------------------
 			  // WinnerTakeAllPolicy (APD like)
 			  // --------------------------------------------------------------------------------
 			  if (m_policy=="TakeEnergyWinner")
 			  {
 				  // If energy is higher then replace the digi by the new one
-				  if ( inputDigi->GetEnergy() > final_digi[this_output_digi]->GetEnergy() ) final_digi[this_output_digi] = inputDigi;
-		          	  final_energy[this_output_digi] += inputDigi->GetEnergy();
+				  if ( energy > final_digi[this_output_digi]->GetEnergy() ) final_digi[this_output_digi] = inputDigi;
+		          	  final_energy[this_output_digi] += energy;
 		       }
 			  // --------------------------------------------------------------------------------
 			  // EnergyCentroidPolicy1 (like block PMT)
@@ -334,9 +349,8 @@ void GateReadout::Digitize()
 				  // First, if the energy of this digi is higher than the previous one, take it as the reference
 		          // in order to have an EnergyWinner policy at levels below the crystal, if any.
 		          // The final energy and crystal position will be modified at the end anyway.
-		          if ( inputDigi->GetEnergy() > final_digi[this_output_digi]->GetEnergy() ) final_digi[this_output_digi] = inputDigi;
+		          if ( energy > final_digi[this_output_digi]->GetEnergy() ) final_digi[this_output_digi] = inputDigi;
 		          // Add the energy to get the total
-		          G4double energy = inputDigi->GetEnergy();
 		          final_energy[this_output_digi] += energy;
 		          // Add the time in order to compute the mean time at the end
 		          final_time[this_output_digi] += inputDigi->GetTime();
@@ -354,7 +368,14 @@ void GateReadout::Digitize()
 		        {
 		          G4Exception( "GateReadout::Digitize", "Digitize", FatalException, "Unknown Readout policy, this is an internal error. Abort.\n");
 		        }
-		      }
+
+		  	  // M. Rädler: For the continuous energy-weighted centroid
+		  	  G4ThreeVector pos = inputDigi->GetGlobalPos();
+		  	  final_global_posX[this_output_digi] += energy * pos.x();
+		  	  final_global_posY[this_output_digi] += energy * pos.y();
+		  	  final_global_posZ[this_output_digi] += energy * pos.z();
+
+		  }
 		      // Case: there is no output digi with same blockID
 		      else
 		      {
@@ -377,6 +398,13 @@ void GateReadout::Digitize()
 		        final_energy[final_nb_out_digi] += energy;
 		        // Store this digi in the list
 		        final_digi[final_nb_out_digi] = inputDigi;
+
+		      	// M. Rädler: For the continuous energy-weighted centroid
+		      	G4ThreeVector pos = inputDigi->GetGlobalPos();
+		      	final_global_posX[final_nb_out_digi] += energy * pos.x();
+		      	final_global_posY[final_nb_out_digi] += energy * pos.y();
+		      	final_global_posZ[final_nb_out_digi] += energy * pos.z();
+
 		        // Increment the total number of output digi
 		        final_nb_out_digi++;
 		      }
@@ -404,7 +432,13 @@ void GateReadout::Digitize()
 			  m_outputDigi->ChangeVolumeIDAndOutputVolumeIDValue(m_crystalDepth,crystal_id);
 			  // Change coordinates (we choose here to place the coordinates at the center of the chosen crystal)
 			  //SetGlobalPos(m_system->ComputeObjectCenter(volID));
-			  ResetGlobalPos(m_system);
+
+		  	  m_outputDigi->SetGlobalPos(G4ThreeVector(
+		  	  	final_global_posX[p]/final_energy[p],
+		  	  	final_global_posY[p]/final_energy[p],
+		  	  	final_global_posZ[p]/final_energy[p]));
+
+		  	  // ResetGlobalPos(m_system);
 			  ResetLocalPos();
 		   }
 		  if (nVerboseLevel>1)
@@ -427,6 +461,10 @@ void GateReadout::Digitize()
 		    // Free other variables
 		    free(final_energy);
 		    free(final_digi);
+
+			free(final_global_posX);
+			free(final_global_posY);
+			free(final_global_posZ);
 
 		    if (nVerboseLevel==1)
 		    {
