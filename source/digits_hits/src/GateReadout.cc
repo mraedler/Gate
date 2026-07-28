@@ -258,6 +258,9 @@ void GateReadout::Digitize()
   G4double* final_global_posY = NULL;
   G4double* final_global_posZ = NULL;
 
+  G4double* final_true_time = NULL;
+  G4ThreeVector* final_true_global_pos = NULL;
+
   G4int final_nb_out_digi = 0;
 
 
@@ -297,6 +300,9 @@ void GateReadout::Digitize()
   final_digi = (GateDigi**)calloc(n_digi,sizeof(GateDigi*));
   final_nb_out_digi = 0;
 
+  // Keeping track of the true global position by choosing the first interaction
+  final_true_time = (G4double*)calloc(n_digi,sizeof(G4double));
+  final_true_global_pos = (G4ThreeVector*)calloc(n_digi,sizeof(G4ThreeVector));
 
   // Start loop on input pulses
 	  for (G4int i=0;i<n_digi;i++)
@@ -373,6 +379,13 @@ void GateReadout::Digitize()
 		  	  final_global_posY[this_output_digi] += energy * pos.y();
 		  	  final_global_posZ[this_output_digi] += energy * pos.z();
 
+		  	  // Keep earliest true interaction
+		  	  if (inputDigi->GetTrueTime() < final_true_time[this_output_digi])
+		  	  {
+		  		  final_true_time[this_output_digi] = inputDigi->GetTrueTime();
+		  		  final_true_global_pos[this_output_digi] = inputDigi->GetTrueGlobalPos();
+		  	  }
+
 		  }
 		      // Case: there is no output digi with same blockID
 		      else
@@ -397,6 +410,10 @@ void GateReadout::Digitize()
 		        // Store this digi in the list
 		        final_digi[final_nb_out_digi] = inputDigi;
 
+		      	// Keep track of the true location
+		      	final_true_time[final_nb_out_digi] = inputDigi->GetTrueTime();
+		      	final_true_global_pos[final_nb_out_digi] = inputDigi->GetTrueGlobalPos();
+
 		      	// M. Rädler: For the continuous energy-weighted centroid
 		      	G4ThreeVector pos = inputDigi->GetGlobalPos();
 		      	final_global_posX[final_nb_out_digi] += energy * pos.x();
@@ -415,6 +432,10 @@ void GateReadout::Digitize()
 		  m_outputDigi = new GateDigi( final_digi[p] );
 		  // Affect energy
 		  m_outputDigi->SetEnergy( final_energy[p] );
+
+	  	  m_outputDigi->SetTrueTime(final_true_time[p]);
+	  	  m_outputDigi->SetTrueGlobalPos(final_true_global_pos[p]);
+
 		  // Special affectations for centroid policy
 		  if (m_policy=="TakeEnergyCentroid")
 		  {
@@ -431,14 +452,17 @@ void GateReadout::Digitize()
 			  // Change coordinates (we choose here to place the coordinates at the center of the chosen crystal)
 			  //SetGlobalPos(m_system->ComputeObjectCenter(volID));
 
-		  	  m_outputDigi->SetGlobalPos(G4ThreeVector(
-		  	  	final_global_posX[p]/final_energy[p],
-		  	  	final_global_posY[p]/final_energy[p],
-		  	  	final_global_posZ[p]/final_energy[p]));
+		  	  // m_outputDigi->SetGlobalPos(G4ThreeVector(
+		  	  // 	final_global_posX[p]/final_energy[p],
+		  	  // 	final_global_posY[p]/final_energy[p],
+		  	  // 	final_global_posZ[p]/final_energy[p]));
 
 		  	  // ResetGlobalPos(m_system);
 			  ResetLocalPos();
 		   }
+
+	  	   m_outputDigi->SetGlobalPos(final_true_global_pos[p]);
+
 		  if (nVerboseLevel>1)
 			  G4cout << "Created new digi for block " << m_outputDigi->GetOutputVolumeID().Top(m_depth) << ".\n"
 				  << "Resulting digi is: \n"
@@ -463,6 +487,9 @@ void GateReadout::Digitize()
 			free(final_global_posX);
 			free(final_global_posY);
 			free(final_global_posZ);
+
+	        free(final_true_time);
+	        free(final_true_global_pos);
 
 		    if (nVerboseLevel==1)
 		    {

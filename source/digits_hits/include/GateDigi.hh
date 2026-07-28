@@ -81,6 +81,9 @@ public:
       inline G4double GetTime() const                         { return m_time; }
       inline void     SetTime(G4double value)         	      { m_time = value; }
 
+      inline G4double GetTrueTime() const                         { return m_trueTime; }
+      inline void     SetTrueTime(G4double value)         	      { m_trueTime = value; }
+
       inline G4double GetEnergy()   const                  	      { return m_energy; }
       inline void SetEnergy(G4double value)           	      { m_energy = value; }
 
@@ -96,6 +99,9 @@ public:
 
       inline void  SetGlobalPos(const G4ThreeVector& xyz)     { m_globalPos = xyz; }
       inline const G4ThreeVector& GetGlobalPos()  const            { return m_globalPos; }
+
+      inline void  SetTrueGlobalPos(const G4ThreeVector& xyz)     { m_trueGlobalPos = xyz; }
+      inline const G4ThreeVector& GetTrueGlobalPos()  const            { return m_trueGlobalPos; }
 
       inline void  SetNPhantomCompton(G4int j)  { m_nPhantomCompton = j; }
       inline G4int GetNPhantomCompton() const        { return m_nPhantomCompton; }
@@ -217,10 +223,12 @@ public:
   G4int m_sourceID;           	  //!< source progressive number
   G4ThreeVector m_sourcePosition; //!< position of the source (NOT the positron) that generated the hit
   G4double m_time;            	  //!< start time of the current pulse
+  G4double m_trueTime;            // M. Rädler: Keep track of the true time
   G4double m_energy;          	  //!< energy measured for the current pulse
   G4double m_max_energy;          	  //!< max energy for the current pulse
   G4ThreeVector m_localPos;   	  //!< position of the current hit
   G4ThreeVector m_globalPos;      //!< position of the current hit
+  G4ThreeVector m_trueGlobalPos;  // M. Rädler: Keep track of the true position
   G4int m_PDGEncoding;        // G4 PDGEncoding
   G4int m_nPhantomCompton;    	  //!< # of compton processes in the phantom occurred to the photon
   G4int m_nCrystalCompton;    	  //!< # of compton processes in the crystal occurred to the photon

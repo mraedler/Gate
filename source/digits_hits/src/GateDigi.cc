@@ -32,6 +32,7 @@ GateDigi::GateDigi(const void* itsMother):
       m_eventID(-1),
       m_sourceID(-1),
       m_time(0),
+      m_trueTime(std::numeric_limits<G4double>::infinity()),
       m_energy(0),
 	  m_max_energy(0),
       m_nPhantomCompton(-1),

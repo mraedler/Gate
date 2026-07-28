@@ -99,6 +99,18 @@ void GateAdder::Digitize()
 		    			 m_outputDigi = CentroidMerge( inputDigi,*iter );
 		    		 }
 
+		    	 	 // Propagate the earliest interaction information
+		    	 	 m_outputDigi->SetTrueTime((*iter)->GetTrueTime());
+		    	 	 m_outputDigi->SetTrueGlobalPos((*iter)->GetTrueGlobalPos());
+
+		    	 	 // if (inputDigi->GetTime() < m_outputDigi->GetTrueTime())
+		    	 	 // {
+		    	 	 // 	 std::cout << "Update necessary" << std::endl;
+		    	 	 // 	 std::cout << (inputDigi->GetTime() - m_outputDigi->GetTrueTime()) / (1e-3 * picosecond) << std::endl;
+		    	 	 // 	 m_outputDigi->SetTrueTime(inputDigi->GetTime());
+		    	 	 // 	 m_outputDigi->SetTrueGlobalPos(inputDigi->GetGlobalPos());
+		    	 	 // }
+
 		    		 if (nVerboseLevel>1)
 		    		 	 {
 		    			 	 G4cout << " [GateAdder::Digitize] Merged previous digi for volume " << inputDigi->GetVolumeID()
@@ -114,6 +126,8 @@ void GateAdder::Digitize()
 		     if ( iter == outputDigiCollectionVector->end() )
 		     {
 		    	 m_outputDigi = new GateDigi(*inputDigi);
+		     	 m_outputDigi->SetTrueTime(inputDigi->GetTime());
+		     	 m_outputDigi->SetTrueGlobalPos(inputDigi->GetGlobalPos());
 		    	 m_outputDigi->SetEnergyIniTrack(-1);
 		    	 m_outputDigi->SetEnergyFin(-1);
 		    	 if (nVerboseLevel>1)
@@ -139,6 +153,7 @@ void GateAdder::Digitize()
   	    return;
     }
   StoreDigiCollection(m_OutputDigiCollection);
+  // std::cout << std::endl;
 }
 
 
