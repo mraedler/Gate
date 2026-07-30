@@ -379,9 +379,11 @@ void GateReadout::Digitize()
 		  	  final_global_posY[this_output_digi] += energy * pos.y();
 		  	  final_global_posZ[this_output_digi] += energy * pos.z();
 
-		  	  // Keep earliest true interaction
+		  	  // Keep the earliest true interaction
 		  	  if (inputDigi->GetTrueTime() < final_true_time[this_output_digi])
 		  	  {
+		  	  	  std::cout << "Update necessary" << std::endl;
+		  	  	  std::cout << (inputDigi->GetTrueTime() - final_true_time[this_output_digi]) /  picosecond << std::endl;
 		  		  final_true_time[this_output_digi] = inputDigi->GetTrueTime();
 		  		  final_true_global_pos[this_output_digi] = inputDigi->GetTrueGlobalPos();
 		  	  }
